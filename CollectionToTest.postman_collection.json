@@ -1,0 +1,387 @@
+{
+  "info": {
+    "_postman_id": "4c6bce72-f785-434a-9126-7de31c6a874d",
+    "name": "CollectionToTest",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "3759802"
+  },
+  "item": [
+    {
+      "name": "Upload Valid Mp3 Resource (200) Copy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request URL matches expected structure\", function () {\r",
+              "    var requestUrl = pm.request.url.toString();\r",
+              "    var resourceServiceUrl = pm.variables.get(\"resource_service_url\");\r",
+              "    var expectedBaseUrl = resourceServiceUrl + \"/resources\";\r",
+              "    pm.expect(requestUrl, `Expected URL to match ${expectedBaseUrl}`).to.equal(expectedBaseUrl);\r",
+              "});\r",
+              "\r",
+              "var jsonData = pm.response.json();\r",
+              "if (jsonData.id) {\r",
+              "    pm.collectionVariables.set(\"id\", jsonData.id);\r",
+              "}\r",
+              "\r",
+              "pm.test(\"Status code is 200\", function () {\r",
+              "    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response contains 'id' field\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData, \"Expected response to contain 'id' field\").to.have.property(\"id\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response contains only 'id' field\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(Object.keys(jsonData), \"Expected response to contain only 'id' field\").to.deep.equal([\"id\"]);\r",
+              "});\r",
+              "\r",
+              "// Validate response structure matches specification\r",
+              "pm.test(\"Response 'id' is a positive integer as per specification\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData.id, \"Response id should be a number\").to.be.a(\"number\");\r",
+              "    pm.expect(jsonData.id, \"Response id should be a positive integer\").to.be.above(0);\r",
+              "    pm.expect(Number.isInteger(jsonData.id), \"Response id should be an integer\").to.be.true;\r",
+              "});\r",
+              "\r",
+              "// Validate response format exactly matches specification: { \"id\": 1 }\r",
+              "pm.test(\"Response format matches specification\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(Object.keys(jsonData).length, \"Response should have exactly 1 field\").to.equal(1);\r",
+              "    pm.expect(jsonData, \"Response should be in format { id: number }\").to.have.all.keys(\"id\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "audio/mpeg"
+          }
+        ],
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": ""
+          }
+        },
+        "url": {
+          "raw": "{{resource_service_url}}/resources",
+          "host": [
+            "{{resource_service_url}}"
+          ],
+          "path": [
+            "resources"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Existing Resource (200) Copy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request URL matches expected structure\", function () {\r",
+              "    var requestUrl = pm.request.url.toString();\r",
+              "    var expectedBaseUrl = pm.variables.get(\"resource_service_url\") + \"/resources/\";\r",
+              "    pm.expect(requestUrl.startsWith(expectedBaseUrl), \"Expected URL to start with the base resource service URL\").to.be.true;\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Path variable 'id' is dynamic\", function () {\r",
+              "    var requestUrl = pm.request.url.toString();\r",
+              "    var dynamicId = pm.variables.get(\"id\");\r",
+              "    var expectedUrl = pm.variables.get(\"resource_service_url\") + \"/resources/\" + dynamicId;\r",
+              "    pm.expect(requestUrl, \"Expected request URL to include dynamic 'id'\").to.equal(expectedUrl);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Status code is 200\", function () {\r",
+              "    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Content-Type is 'audio/mpeg'\", function () {\r",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'audio/mpeg'\").to.equal(\"audio/mpeg\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Content-Length header is present\", function () {\r",
+              "    var contentLength = pm.response.headers.get(\"Content-Length\");\r",
+              "    pm.expect(contentLength, \"Expected Content-Length header to be present\").to.not.be.null;\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Content-Length is greater than zero\", function () {\r",
+              "    var contentLength = pm.response.headers.get(\"Content-Length\");\r",
+              "    pm.expect(parseInt(contentLength), \"Expected Content-Length to be greater than zero\").to.be.above(0);\r",
+              "});\r",
+              "\r",
+              "// Validate response body is binary MP3 data as per specification\r",
+              "pm.test(\"Response body contains binary data\", function () {\r",
+              "    pm.expect(pm.response, \"Response should have a body\").to.have.property(\"stream\");\r",
+              "    pm.expect(pm.response.stream.length, \"Response body should not be empty\").to.be.above(0);\r",
+              "});\r",
+              "\r",
+              "// Validate headers match specification exactly\r",
+              "pm.test(\"Response headers match specification\", function () {\r",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Content-Type must be audio/mpeg\").to.equal(\"audio/mpeg\");\r",
+              "    var contentLength = parseInt(pm.response.headers.get(\"Content-Length\"));\r",
+              "    pm.expect(contentLength, \"Content-Length must be positive\").to.be.a(\"number\").and.to.be.above(0);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{resource_service_url}}/resources/{{id}}",
+          "host": [
+            "{{resource_service_url}}"
+          ],
+          "path": [
+            "resources",
+            "{{id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Resources With Metadata (200) Copy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request URL matches expected structure\", function () {\r",
+              "    var requestUrl = pm.request.url.toString();\r",
+              "    var resourceServiceUrl = pm.variables.get(\"resource_service_url\");\r",
+              "    var dynamicId = pm.variables.get(\"id\");\r",
+              "    var expectedUrl = resourceServiceUrl + \"/resources?id=\" + dynamicId + \",101,102\";\r",
+              "    pm.expect(requestUrl, \"Expected request URL to match the expected structure\").to.equal(expectedUrl);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Request parameter includes dynamic 'id'\", function () {\r",
+              "    var requestUrl = pm.request.url.toString();\r",
+              "    var dynamicId = pm.variables.get(\"id\");\r",
+              "    pm.expect(requestUrl, `Expected request URL to include dynamic 'id' value: ${dynamicId}`).to.include(\"id=\" + dynamicId);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Request parameter includes 101\", function () {\r",
+              "    var requestParams = pm.request.url.query.toObject();\r",
+              "    pm.expect(requestParams, \"Expected request parameters to include 101\").to.have.property(\"id\").that.includes(\"101\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Request parameter includes 102\", function () {\r",
+              "    var requestParams = pm.request.url.query.toObject();\r",
+              "    pm.expect(requestParams, \"Expected request parameters to include 102\").to.have.property(\"id\").that.includes(\"102\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Status code is 200\", function () {\r",
+              "    pm.expect(pm.response.code, \"Expected status code to be 200\").to.equal(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response contains 'ids' field\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData, \"Expected response to contain 'ids' field\").to.have.property(\"ids\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"'ids' field is an array\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData.ids, \"Expected 'ids' to be an array\").to.be.an(\"array\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Each element in 'ids' array is a number\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    jsonData.ids.forEach(function (id) {\r",
+              "        pm.expect(id, \"Expected each element in 'ids' to be a number\").to.be.a(\"number\");\r",
+              "    });\r",
+              "});\r",
+              "\r",
+              "pm.test(\"'ids' array does not contain 101\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData.ids, \"Expected 'ids' to not contain 101\").to.not.include(101);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"'ids' array does not contain 102\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData.ids, \"Expected 'ids' to not contain 102\").to.not.include(102);\r",
+              "});\r",
+              "\r",
+              "// Validate response structure matches specification exactly\r",
+              "pm.test(\"Response structure matches specification format { ids: [...] }\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    var keys = Object.keys(jsonData);\r",
+              "    pm.expect(keys, \"Response should contain only 'ids' field\").to.deep.equal([\"ids\"]);\r",
+              "});\r",
+              "\r",
+              "// Validate ids array contains only existing resources (dynamic id)\r",
+              "pm.test(\"Response 'ids' array contains only the dynamic id that exists\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    var dynamicId = parseInt(pm.variables.get(\"id\"));\r",
+              "    pm.expect(jsonData.ids, \"ids array should contain the dynamic id\").to.include(dynamicId);\r",
+              "    pm.expect(jsonData.ids.length, \"ids array should contain only 1 element (dynamic id)\").to.equal(1);\r",
+              "});\r",
+              "\r",
+              "// Validate specification requirement - no non-existent IDs in response\r",
+              "pm.test(\"Response does not contain non-existent IDs as per specification\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData.ids, \"ids must not contain elements that don't exist (101, 102)\").to.not.include.members([101, 102]);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{resource_service_url}}/resources?id={{id}},101,102",
+          "host": [
+            "{{resource_service_url}}"
+          ],
+          "path": [
+            "resources"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "{{id}},101,102"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Deleted Resource (404) Copy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request URL matches expected structure\", function () {\r",
+              "    var requestUrl = pm.request.url.toString();\r",
+              "    var resourceServiceUrl = pm.variables.get(\"resource_service_url\");\r",
+              "    var dynamicId = pm.variables.get(\"id\");\r",
+              "    var expectedUrl = resourceServiceUrl + \"/resources/\" + dynamicId;\r",
+              "    pm.expect(requestUrl, \"Expected request URL to match the expected structure\").to.equal(expectedUrl);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Path variable 'id' is dynamic\", function () {\r",
+              "    var requestUrl = pm.request.url.toString();\r",
+              "    var dynamicId = pm.variables.get(\"id\");\r",
+              "    var expectedUrl = pm.variables.get(\"resource_service_url\") + \"/resources/\" + dynamicId;\r",
+              "    pm.expect(requestUrl, \"Expected request URL to include dynamic 'id'\").to.equal(expectedUrl);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Status code is 404\", function () {\r",
+              "    pm.expect(pm.response.code, \"Expected status code to be 404\").to.equal(404);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response is in JSON format\", function () {\r",
+              "    pm.expect(pm.response.headers.get(\"Content-Type\"), \"Expected Content-Type to be 'application/json'\")\r",
+              "        .to.equal(\"application/json\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response contains '404'\", function () {\r",
+              "    var responseBody = pm.response.text();\r",
+              "    pm.expect(responseBody, \"Expected response to contain '404'\").to.include(\"404\");\r",
+              "});\r",
+              "\r",
+              "let pathVariable = pm.request.url.toString().split('/').pop();\r",
+              "\r",
+              "pm.test(\"Response contains '${pathVariable}'\", function () {\r",
+              "    var responseBody = pm.response.text();\r",
+              "    pm.expect(responseBody, \"Expected response to contain '${pathVariable}'\").to.include(pathVariable);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response contains 'errorMessage'\", function () {\r",
+              "    var responseBody = pm.response.text();\r",
+              "    pm.expect(responseBody, \"Expected response to contain 'errorMessage'\").to.include(\"errorMessage\");\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Response contains 'errorCode'\", function () {\r",
+              "    var responseBody = pm.response.text();\r",
+              "    pm.expect(responseBody, \"Expected response to contain 'errorCode'\").to.include(\"errorCode\");\r",
+              "});\r",
+              "\r",
+              "// Validate error response structure matches specification\r",
+              "pm.test(\"Response has required error fields as per specification\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData, \"Response should have 'errorMessage' field\").to.have.property(\"errorMessage\");\r",
+              "    pm.expect(jsonData, \"Response should have 'errorCode' field\").to.have.property(\"errorCode\");\r",
+              "    pm.expect(jsonData.errorCode, \"errorCode should be '404'\").to.equal(\"404\");\r",
+              "});\r",
+              "\r",
+              "// Validate error message format matches specification exactly\r",
+              "pm.test(\"Error message matches specification format: 'Resource with ID=X not found'\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    var dynamicId = pm.variables.get(\"id\");\r",
+              "    var expectedMessage = `Resource with ID=${dynamicId} not found`;\r",
+              "    pm.expect(jsonData.errorMessage, \"Error message should match specification format\").to.equal(expectedMessage);\r",
+              "});\r",
+              "\r",
+              "// Validate response does not contain 'details' field\r",
+              "pm.test(\"Response does not contain 'details' field as per specification\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    pm.expect(jsonData, \"404 errors should not have 'details' field\").to.not.have.property(\"details\");\r",
+              "});\r",
+              "\r",
+              "// Validate response contains only required fields\r",
+              "pm.test(\"Response contains only 'errorMessage' and 'errorCode' fields\", function () {\r",
+              "    var jsonData = pm.response.json();\r",
+              "    var keys = Object.keys(jsonData).sort();\r",
+              "    pm.expect(keys, \"Response should contain only errorMessage and errorCode\").to.deep.equal([\"errorCode\", \"errorMessage\"]);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{resource_service_url}}/resources/{{id}}",
+          "host": [
+            "{{resource_service_url}}"
+          ],
+          "path": [
+            "resources",
+            "{{id}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "resource_service_url",
+      "value": "http://localhost:8085"
+    },
+    {
+      "key": "song_service_url",
+      "value": "http://localhost:8085"
+    },
+    {
+      "key": "id",
+      "value": ""
+    }
+  ]
+}
