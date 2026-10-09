@@ -32,6 +32,15 @@ services:
       song-db:
         condition: service_healthy
 
+  resource-processor:
+    build:
+      context: ./resource-processor
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      EUREKA_DISCOVERY_SERVICE_URL: ${EUREKA_SERVICE_URL}
+
   eureka-discovery-service:
     build:
       context: ./eureka-discovery-service
@@ -83,15 +92,12 @@ services:
       start_period: 10s
   localstack:
     container_name: '${LOCALSTACK_DOCKER_NAME:-localstack-main}'
-    image: localstack/localstack
+    image: localstack/localstack:4.14.0
     ports:
       - '127.0.0.1:4566:4566' # LocalStack Gateway
       - '127.0.0.1:4510-4559:4510-4559' # external services port range
       - '127.0.0.1:443:443' # LocalStack HTTPS Gateway
     environment:
-      # Activate LocalStack for AWS: https://docs.localstack.cloud/getting-started/auth-token/
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?}
-      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
       - DEBUG=${DEBUG:-0}
       - PERSISTENCE=${PERSISTENCE:-0}
     volumes:

@@ -19,6 +19,12 @@ public class S3Config {
     @Value("${aws.s3.region}")
     private String region;
 
+    @Value("${aws.accessKeyId}")
+    private String accessKeyId;
+
+    @Value("${aws.secretAccessKey}")
+    private String secretAccessKey;
+
 
     @Bean
     public S3Client s3Client() {
@@ -26,7 +32,7 @@ public class S3Config {
                 .region(Region.of(region))
                 .endpointOverride(URI.create(url))
                 .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create("test", "test")))
+                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
                 .forcePathStyle(true)
                 .build();
     }
