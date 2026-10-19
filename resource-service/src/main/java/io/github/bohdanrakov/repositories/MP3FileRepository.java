@@ -10,7 +10,4 @@ import java.util.List;
 
 @Repository
 public interface MP3FileRepository extends JpaRepository<MP3File, Long> {
-
-    @Query("SELECT mp3.id FROM MP3File mp3 WHERE mp3.id IN :requestIds")
-    List<Long> findExistingIds(List<Long> requestIds);
 }

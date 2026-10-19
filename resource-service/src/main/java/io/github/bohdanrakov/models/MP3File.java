@@ -10,8 +10,8 @@ public class MP3File {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(columnDefinition = "bytea")
-    private byte[] byteContent;
+    @Column(columnDefinition = "s3_key")
+    private String s3Key;
 
     public void setId(Long id) {
         this.id = id;
@@ -21,11 +21,11 @@ public class MP3File {
         return id;
     }
 
-    public byte[] getByteContent() {
-        return byteContent;
+    public String getS3Key() {
+        return s3Key;
     }
 
-    public void setByteContent(byte[] byteContent) {
-        this.byteContent = byteContent;
+    public void setS3Key(String s3Key) {
+        this.s3Key = s3Key;
     }
 }
