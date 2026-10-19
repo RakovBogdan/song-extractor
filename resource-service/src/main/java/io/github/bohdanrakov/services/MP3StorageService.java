@@ -17,6 +17,7 @@ import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xml.sax.SAXException;
@@ -36,14 +37,16 @@ public class MP3StorageService {
     private final MP3FileMapper mp3FileMapper;
     private final SongServiceCallerService songServiceCallerService;
     private final S3Service s3Service;
+    private final StreamBridge streamBridge;
 
     public MP3StorageService(MP3FileRepository mp3FileRepository, MP3FileMapper mp3FileMapper,
                              SongServiceCallerService songServiceCallerService,
-                             S3Service s3Service) {
+                             S3Service s3Service, StreamBridge streamBridge) {
         this.mp3FileRepository = mp3FileRepository;
         this.mp3FileMapper = mp3FileMapper;
         this.songServiceCallerService = songServiceCallerService;
         this.s3Service = s3Service;
+        this.streamBridge = streamBridge;
     }
 
     @Transactional
@@ -55,6 +58,7 @@ public class MP3StorageService {
         MP3File mp3File = new MP3File();
         mp3File.setS3Key(s3key);
         MP3File savedMP3File = mp3FileRepository.save(mp3File);
+        streamBridge.send("id-stored", savedMP3File.getId());
 
         return savedMP3File.getId();
     }

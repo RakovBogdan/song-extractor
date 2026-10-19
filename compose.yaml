@@ -11,6 +11,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD}
       EUREKA_DISCOVERY_SERVICE_URL: ${EUREKA_SERVICE_URL}
       AWS_S3_URL: ${LOCALSTACK_SERVICE_URL}
+      RABBIT_MQ_HOST: ${RABBIT_MQ_HOST}
+      RABBIT_MQ_PORT: ${RABBIT_MQ_PORT}
+      RABBIT_MQ_USERNAME: ${RABBIT_MQ_USERNAME}
+      RABBIT_MQ_PASSWORD: ${RABBIT_MQ_PASSWORD}
     depends_on:
       resource-db:
         condition: service_healthy
@@ -40,6 +44,10 @@ services:
       - "8084:8084"
     environment:
       EUREKA_DISCOVERY_SERVICE_URL: ${EUREKA_SERVICE_URL}
+      RABBIT_MQ_HOST: ${RABBIT_MQ_HOST}
+      RABBIT_MQ_PORT: ${RABBIT_MQ_PORT}
+      RABBIT_MQ_USERNAME: ${RABBIT_MQ_USERNAME}
+      RABBIT_MQ_PASSWORD: ${RABBIT_MQ_PASSWORD}
 
   eureka-discovery-service:
     build:
@@ -90,6 +98,7 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+
   localstack:
     container_name: '${LOCALSTACK_DOCKER_NAME:-localstack-main}'
     image: localstack/localstack:4.14.0
@@ -103,3 +112,10 @@ services:
     volumes:
       - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack'
       - '/var/run/docker.sock:/var/run/docker.sock'
+
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: shop-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
