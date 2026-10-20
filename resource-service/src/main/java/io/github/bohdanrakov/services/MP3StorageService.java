@@ -1,6 +1,7 @@
 package io.github.bohdanrakov.services;
 
 import io.github.bohdanrakov.dtos.MP3FileDTO;
+import io.github.bohdanrakov.events.ResourceStoredEventPublisher;
 import io.github.bohdanrakov.exceptions.IdListTooLargeException;
 import io.github.bohdanrakov.exceptions.InvalidIdException;
 import io.github.bohdanrakov.exceptions.MP3FileNotFoundException;
@@ -17,6 +18,7 @@ import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xml.sax.SAXException;
@@ -36,30 +38,56 @@ public class MP3StorageService {
     private final MP3FileMapper mp3FileMapper;
     private final SongServiceCallerService songServiceCallerService;
     private final S3Service s3Service;
+    private final ResourceStoredEventPublisher resourceStoredEventPublisher;
 
     public MP3StorageService(MP3FileRepository mp3FileRepository, MP3FileMapper mp3FileMapper,
                              SongServiceCallerService songServiceCallerService,
-                             S3Service s3Service) {
+                             S3Service s3Service, ResourceStoredEventPublisher resourceStoredEventPublisher) {
         this.mp3FileRepository = mp3FileRepository;
         this.mp3FileMapper = mp3FileMapper;
         this.songServiceCallerService = songServiceCallerService;
         this.s3Service = s3Service;
+        this.resourceStoredEventPublisher = resourceStoredEventPublisher;
     }
 
-    @Transactional
     public Long storeMP3File(byte[] mp3content) {
-        Metadata metadata = extractMetadata(mp3content);
+        validateMp3Content(mp3content);
 
-        String s3key = metadata.get("dc:title") + UUID.randomUUID();
+        String s3key = UUID.randomUUID().toString();
         s3Service.storeMP3File(s3key, mp3content);
         MP3File mp3File = new MP3File();
         mp3File.setS3Key(s3key);
-        MP3File savedMP3File = mp3FileRepository.save(mp3File);
+        MP3File savedMP3File;
+        try {
+            savedMP3File = mp3FileRepository.save(mp3File);
+        } catch (RuntimeException ex) {
+            s3Service.deleteMp3Files(List.of(s3key));
+            throw ex;
+        }
+        try {
+            resourceStoredEventPublisher.sendResourceStoredEvent(savedMP3File.getId());
+        } catch (RuntimeException ex) {
+            rollbackStorage(ex, s3key, savedMP3File.getId());
+        }
 
         return savedMP3File.getId();
     }
 
-    private static Metadata extractMetadata(byte[] mp3content) {
+    private void rollbackStorage(RuntimeException messagingException, String s3Key, Long id) {
+        try {
+            mp3FileRepository.deleteById(id);
+        } catch (RuntimeException ex) {
+            messagingException.addSuppressed(ex);
+        }
+
+        try {
+            s3Service.deleteMp3Files(List.of(s3Key));
+        } catch (RuntimeException ex) {
+            messagingException.addSuppressed(ex);
+        }
+    }
+
+    private void validateMp3Content(byte[] mp3content) {
         String mimeType = new Tika().detect(mp3content);
         if (!"audio/mpeg".equals(mimeType)) {
             throw new MP3FileUnparsableException("The request body is invalid MP3. Only MP3 files are allowed");
@@ -75,7 +103,6 @@ public class MP3StorageService {
             logger.error(exception.getMessage(), exception);
             throw new MP3FileUnparsableException("The request body is invalid MP3. Only MP3 files are allowed");
         }
-        return metadata;
     }
 
     public MP3FileDTO getMP3File(long id) {

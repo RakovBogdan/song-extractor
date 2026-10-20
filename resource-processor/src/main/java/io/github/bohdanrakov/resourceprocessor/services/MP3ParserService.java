@@ -1,5 +1,7 @@
 package io.github.bohdanrakov.resourceprocessor.services;
 
+import io.github.bohdanrakov.resourceprocessor.dtos.SongServiceStoreRequest;
+import io.github.bohdanrakov.resourceprocessor.mappers.TikaMetadataSongRequestMapper;
 import org.springframework.stereotype.Service;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
@@ -15,6 +17,23 @@ import java.io.IOException;
 
 @Service
 public class MP3ParserService {
+
+    private final SongServiceCallerService songServiceCallerService;
+    private final ResourceServiceCallerService resourceServiceCallerService;
+    private final TikaMetadataSongRequestMapper tikaMetadataSongRequestMapper;
+
+    public MP3ParserService(SongServiceCallerService songServiceCallerService, ResourceServiceCallerService resourceServiceCallerService, TikaMetadataSongRequestMapper tikaMetadataSongRequestMapper) {
+        this.songServiceCallerService = songServiceCallerService;
+        this.resourceServiceCallerService = resourceServiceCallerService;
+        this.tikaMetadataSongRequestMapper = tikaMetadataSongRequestMapper;
+    }
+
+    public void processNewResource(Long id) {
+        byte[] mp3ByteContent = resourceServiceCallerService.getMP3ByteContent(id);
+        Metadata metadata = extractMetadata(mp3ByteContent);
+        SongServiceStoreRequest songRequest = tikaMetadataSongRequestMapper.toSongRequest(metadata, id);
+        songServiceCallerService.uploadSongMetadata(songRequest);
+    }
 
     public Metadata extractMetadata(byte[] mp3content) {
         String mimeType = new Tika().detect(mp3content);
@@ -32,21 +51,5 @@ public class MP3ParserService {
             throw new RuntimeException("The request body is invalid MP3. Only MP3 files are allowed");
         }
         return metadata;
-    }
-
-
-    private void parseMetadata(Metadata metadata) {
-        String name = metadata.get("dc:title");
-        String artist = metadata.get("xmpDM:artist");
-        String album = metadata.get("xmpDM:album");
-        String duration = mapDuration(metadata.get("xmpDM:duration"));
-        String year = metadata.get("xmpDM:releaseDate");
-    }
-
-    private String mapDuration(String duration) {
-        double secondsTotal = Double.parseDouble(duration);
-        int minutes = (int) secondsTotal / 60;
-        int seconds = (int) secondsTotal % 60;
-        return String.format("%02d:%02d", minutes, seconds);
     }
 }
