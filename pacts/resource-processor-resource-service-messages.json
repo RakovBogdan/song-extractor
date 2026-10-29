@@ -1,0 +1,47 @@
+{
+  "consumer": {
+    "name": "resource-processor"
+  },
+  "interactions": [
+    {
+      "comments": {
+        "testname": "io.github.bohdanrakov.resourceprocessor.contracts.ResourceStoredEventPactTest.resourceStoredEventTriggersProcessing(AsynchronousMessage)"
+      },
+      "contents": {
+        "content": 1,
+        "contentType": "application/json",
+        "encoded": false
+      },
+      "description": "a resource stored event",
+      "key": "497e1d17",
+      "matchingRules": {
+        "body": {
+          "$": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "contentType": "application/json"
+      },
+      "pending": false,
+      "type": "Asynchronous/Messages"
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.7.5"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "resource-service-messages"
+  }
+}

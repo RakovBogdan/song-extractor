@@ -18,7 +18,6 @@ import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xml.sax.SAXException;
@@ -68,6 +67,7 @@ public class MP3StorageService {
             resourceStoredEventPublisher.sendResourceStoredEvent(savedMP3File.getId());
         } catch (RuntimeException ex) {
             rollbackStorage(ex, s3key, savedMP3File.getId());
+            throw ex;
         }
 
         return savedMP3File.getId();
