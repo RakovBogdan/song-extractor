@@ -18,6 +18,18 @@ services:
     depends_on:
       resource-db:
         condition: service_healthy
+      localstack:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8081/actuator/health | grep -q UP || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
   song-service:
     build:
@@ -35,6 +47,14 @@ services:
     depends_on:
       song-db:
         condition: service_healthy
+      eureka-discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8082/actuator/health | grep -q UP || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
   resource-processor:
     build:
@@ -48,6 +68,17 @@ services:
       RABBIT_MQ_PORT: ${RABBIT_MQ_PORT}
       RABBIT_MQ_USERNAME: ${RABBIT_MQ_USERNAME}
       RABBIT_MQ_PASSWORD: ${RABBIT_MQ_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      eureka-discovery-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8084/actuator/health | grep -q UP || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
   eureka-discovery-service:
     build:
@@ -55,6 +86,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8761:8761"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8761/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
 
   api-gateway-service:
     build:
@@ -64,6 +101,15 @@ services:
       - "8085:8085"
     environment:
       EUREKA_DISCOVERY_SERVICE_URL: ${EUREKA_SERVICE_URL}
+    depends_on:
+      eureka-discovery-service:
+        condition: service_healthy
+      resource-service:
+        condition: service_healthy
+      song-service:
+        condition: service_healthy
+      resource-processor:
+        condition: service_healthy
 
   resource-db:
     image: postgres:17-alpine
@@ -112,6 +158,12 @@ services:
     volumes:
       - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack'
       - '/var/run/docker.sock:/var/run/docker.sock'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:4566/_localstack/health | grep -Eq '\"s3\": \"(available|running)\"'"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
 
   rabbitmq:
     image: rabbitmq:latest
@@ -119,3 +171,9 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
