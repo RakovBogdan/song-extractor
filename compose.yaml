@@ -3,8 +3,10 @@ services:
     build:
       context: ./resource-service
       dockerfile: Dockerfile
+    deploy:
+      replicas: 2
     ports:
-      - "8081:8081"
+      - "8086-8087:8081"
     environment:
       SPRING_DATASOURCE_URL: ${RESOURCE_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USERNAME}
@@ -176,4 +178,4 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 15s
+      start_period: 15s
