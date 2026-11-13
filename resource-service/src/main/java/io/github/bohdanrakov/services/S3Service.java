@@ -1,10 +1,14 @@
 package io.github.bohdanrakov.services;
 
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
+import software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
@@ -12,6 +16,8 @@ import java.util.List;
 
 @Service
 public class S3Service {
+
+    private static final Logger logger = LoggerFactory.getLogger(S3Service.class);
 
     @Value("${aws.s3.bucket-name}")
     private String bucket;
@@ -25,9 +31,9 @@ public class S3Service {
     @PostConstruct
     void initializeBucket() {
         try {
-            s3Client.headBucket(b -> b.bucket(bucket));
-        } catch (NoSuchBucketException ex) {
             s3Client.createBucket(b -> b.bucket(bucket));
+        } catch (BucketAlreadyExistsException | BucketAlreadyOwnedByYouException ex) {
+            logger.info("S3 bucket {} already exists", bucket);
         }
     }
 

@@ -70,6 +70,9 @@ public class MP3StorageService {
             throw ex;
         }
 
+        logger.info("=========Attempting to store the MP3 file with id={} from resource service=============",
+                savedMP3File.getId());
+
         return savedMP3File.getId();
     }
 
