@@ -1,6 +1,7 @@
 package io.github.bohdanrakov.resourceprocessor.services;
 
 import io.github.bohdanrakov.resourceprocessor.dtos.SongServiceStoreRequest;
+import io.github.bohdanrakov.resourceprocessor.events.ResourceProcessedEventPublisher;
 import io.github.bohdanrakov.resourceprocessor.mappers.TikaMetadataSongRequestMapper;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
@@ -53,6 +54,9 @@ class MP3ParserServiceTest {
     @Mock
     private TikaMetadataSongRequestMapper tikaMetadataSongRequestMapper;
 
+    @Mock
+    private ResourceProcessedEventPublisher resourceProcessedEventPublisher;
+
     @InjectMocks
     private MP3ParserService mp3ParserService;
 
@@ -68,11 +72,13 @@ class MP3ParserServiceTest {
             mp3ParserService.processNewResource(1L);
         }
 
-        InOrder order = inOrder(resourceServiceCallerService, tikaMetadataSongRequestMapper, songServiceCallerService);
+        InOrder order = inOrder(resourceServiceCallerService, tikaMetadataSongRequestMapper, songServiceCallerService,
+                resourceProcessedEventPublisher);
         order.verify(resourceServiceCallerService).getMP3ByteContent(1L);
         ArgumentCaptor<Metadata> metadata = ArgumentCaptor.forClass(Metadata.class);
         order.verify(tikaMetadataSongRequestMapper).toSongRequest(metadata.capture(), eq(1L));
         order.verify(songServiceCallerService).uploadSongMetadata(request);
+        order.verify(resourceProcessedEventPublisher).sendResourceProcessedEvent(1L);
         assertThat(metadata.getValue().get("dc:title")).isEqualTo("Song");
     }
 
@@ -88,7 +94,7 @@ class MP3ParserServiceTest {
                     .hasMessage(INVALID_MP3_MESSAGE);
         }
 
-        verifyNoInteractions(tikaMetadataSongRequestMapper, songServiceCallerService);
+        verifyNoInteractions(tikaMetadataSongRequestMapper, songServiceCallerService, resourceProcessedEventPublisher);
     }
 
     @Test
@@ -103,7 +109,7 @@ class MP3ParserServiceTest {
         }
 
         verify(songServiceCallerService, never()).uploadSongMetadata(any());
-        verifyNoInteractions(tikaMetadataSongRequestMapper);
+        verifyNoInteractions(tikaMetadataSongRequestMapper, resourceProcessedEventPublisher);
     }
 
     @Test

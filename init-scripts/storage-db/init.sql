@@ -7,5 +7,5 @@ CREATE TABLE storage (
 );
 
 INSERT INTO storage (storage_type, bucket, path) VALUES
-    ('STAGING', 'staging-mp3-storage', '/files'),
-    ('PERMANENT', 'permanent-mp3-storage', '/files');
+    ('STAGING', 'staging-mp3-storage', '/staging-files'),
+    ('PERMANENT', 'permanent-mp3-storage', '/permanent-files');

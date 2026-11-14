@@ -1,8 +1,10 @@
 package io.github.bohdanrakov.services;
 
+import io.github.bohdanrakov.dtos.StorageDTO;
 import io.github.bohdanrakov.events.ResourceStoredEventPublisher;
 import io.github.bohdanrakov.exceptions.MP3FileUnparsableException;
 import io.github.bohdanrakov.models.MP3File;
+import io.github.bohdanrakov.models.StorageType;
 import io.github.bohdanrakov.repositories.MP3FileRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,12 +45,15 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(properties = "eureka.client.enabled=false")
 @Testcontainers
 class MP3StorageServiceIntegrationTest {
 
-    private static final String BUCKET_NAME = "mp3-storage";
+    private static final String BUCKET_NAME = "staging-mp3-storage";
+    private static final StorageDTO STAGING_STORAGE =
+            new StorageDTO(1L, StorageType.STAGING, BUCKET_NAME, "/files");
     private static final String QUEUE_NAME = "exchange-resource-id.resource-processor";
 
     @Container
@@ -86,13 +91,15 @@ class MP3StorageServiceIntegrationTest {
     @MockitoBean
     private SongServiceCallerService songServiceCallerService;
 
+    @MockitoBean
+    private StorageServiceCallerService storageServiceCallerService;
+
     @DynamicPropertySource
     static void s3Properties(DynamicPropertyRegistry registry) {
         registry.add("aws.s3.url", () -> localstackContainer.getEndpoint().toString());
         registry.add("aws.s3.region", localstackContainer::getRegion);
         registry.add("aws.accessKeyId", localstackContainer::getAccessKey);
         registry.add("aws.secretAccessKey", localstackContainer::getSecretKey);
-        registry.add("aws.s3.bucket-name", () -> BUCKET_NAME);
     }
 
     @BeforeAll
@@ -104,6 +111,7 @@ class MP3StorageServiceIntegrationTest {
                         AwsBasicCredentials.create(localstackContainer.getAccessKey(), localstackContainer.getSecretKey())))
                 .forcePathStyle(true)
                 .build();
+        s3TestClient.createBucket(b -> b.bucket(BUCKET_NAME));
 
         try (InputStream in = MP3StorageServiceIntegrationTest.class.getResourceAsStream("/sample.mp3")) {
             mp3Content = Objects.requireNonNull(in).readAllBytes();
@@ -118,6 +126,7 @@ class MP3StorageServiceIntegrationTest {
     @BeforeEach
     void resetState() {
         mp3FileRepository.deleteAll();
+        when(storageServiceCallerService.getStorage(StorageType.STAGING)).thenReturn(STAGING_STORAGE);
 
         getS3Keys().forEach(key -> s3TestClient.deleteObject(b -> b.bucket(BUCKET_NAME).key(key)));
 
@@ -129,6 +138,9 @@ class MP3StorageServiceIntegrationTest {
         Long id = mp3StorageService.storeMP3File(mp3Content);
 
         MP3File storedMP3File = mp3FileRepository.findById(id).orElseThrow();
+        assertThat(storedMP3File.getState()).isEqualTo(StorageType.STAGING);
+        assertThat(storedMP3File.getBucket()).isEqualTo(BUCKET_NAME);
+        assertThat(storedMP3File.getS3Key()).startsWith("/files/");
         byte[] mp3ContentFromS3 = s3TestClient.getObjectAsBytes(b -> b
                 .bucket(BUCKET_NAME)
                 .key(storedMP3File.getS3Key()))

@@ -25,10 +25,20 @@ public class RestClientConfig {
     @Value("${song.service.url}")
     private String songServiceUrl;
 
+    @Value("${storage.service.url}")
+    private String storageServiceUrl;
+
     @Bean
     public RestClient songsRestClient(@LoadBalanced RestClient.Builder loadBalancedRestClientBuilder) {
-        return loadBalancedRestClientBuilder
+        return loadBalancedRestClientBuilder.clone()
                 .baseUrl(songServiceUrl)
+                .build();
+    }
+
+    @Bean
+    public RestClient storageRestClient(@LoadBalanced RestClient.Builder loadBalancedRestClientBuilder) {
+        return loadBalancedRestClientBuilder.clone()
+                .baseUrl(storageServiceUrl)
                 .build();
     }
 }

@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
+import software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.io.IOException;
@@ -58,6 +60,7 @@ public class ResourceSteps {
     @Given("resource storage is empty")
     public void resourceStorageIsEmpty() {
         mp3FileRepository.deleteAll();
+        createBucketIfMissing();
         getS3Keys().forEach(key -> s3Client.deleteObject(b -> b.bucket(BUCKET_NAME).key(key)));
         amqpAdmin.purgeQueue(QUEUE_NAME, false);
         songServiceStub.resetAll();
@@ -184,6 +187,14 @@ public class ResourceSteps {
             return Objects.requireNonNull(in).readAllBytes();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    private void createBucketIfMissing() {
+        try {
+            s3Client.createBucket(b -> b.bucket(BUCKET_NAME));
+        } catch (BucketAlreadyExistsException | BucketAlreadyOwnedByYouException ex) {
+            // bucket was created by a previous scenario
         }
     }
 
