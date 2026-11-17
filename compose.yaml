@@ -3,8 +3,6 @@ services:
     build:
       context: ./resource-service
       dockerfile: Dockerfile
-    deploy:
-      replicas: 2
     ports:
       - "8086-8087:8081"
     environment:

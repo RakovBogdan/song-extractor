@@ -59,6 +59,7 @@ public class MP3StorageService {
     public Long storeMP3File(byte[] mp3content) {
         validateMp3Content(mp3content);
 
+        logger.info("---just before get STAGING storage call");
         StorageDTO stagingStorage = storageServiceCallerService.getStorage(StorageType.STAGING);
         String bucket = stagingStorage.bucket();
         String s3key = buildS3Key(stagingStorage, UUID.randomUUID().toString());
@@ -99,6 +100,7 @@ public class MP3StorageService {
             return;
         }
 
+        logger.info("---just before get permanent storage call");
         StorageDTO permanentStorage = storageServiceCallerService.getStorage(StorageType.PERMANENT);
         String sourceBucket = mp3File.getBucket();
         String sourceKey = mp3File.getS3Key();

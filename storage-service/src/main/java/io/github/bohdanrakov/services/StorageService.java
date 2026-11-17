@@ -53,7 +53,7 @@ public class StorageService {
         logger.info("Deleting storages");
         if (ids.length() >= 200) {
             throw new IdListTooLargeException("CSV string is too long: received " + ids.length()
-                    + " characters, maximum allowed is 199");
+                    + " characters, must be less than 200 characters");
         }
 
         List<Long> parsedIds = new ArrayList<>();
