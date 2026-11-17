@@ -7,6 +7,7 @@ import au.com.dius.pact.provider.junitsupport.Provider;
 import au.com.dius.pact.provider.junitsupport.State;
 import au.com.dius.pact.provider.junitsupport.loader.PactFolder;
 import io.github.bohdanrakov.models.MP3File;
+import io.github.bohdanrakov.models.StorageType;
 import io.github.bohdanrakov.repositories.MP3FileRepository;
 import io.github.bohdanrakov.services.S3Service;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,8 +70,10 @@ class ResourceServiceHttpPactProviderTest {
     Map<String, Object> resourceExists() {
         MP3File mp3File = new MP3File();
         mp3File.setS3Key("pact-sample");
+        mp3File.setBucket("pact-bucket");
+        mp3File.setState(StorageType.STAGING);
         MP3File saved = mp3FileRepository.save(mp3File);
-        when(s3Service.getMP3FileContent("pact-sample")).thenReturn(readSampleMp3());
+        when(s3Service.getMP3FileContent("pact-bucket", "pact-sample")).thenReturn(readSampleMp3());
         return Map.of("id", saved.getId());
     }
 

@@ -3,6 +3,7 @@ package io.github.bohdanrakov.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -16,7 +17,7 @@ public class SongServiceCallerService {
     private static final Logger logger = LoggerFactory.getLogger(SongServiceCallerService.class);
     private final RestClient restClient;
 
-    public SongServiceCallerService(RestClient restClient) {
+    public SongServiceCallerService(@Qualifier("songsRestClient") RestClient restClient) {
         this.restClient = restClient;
     }
 

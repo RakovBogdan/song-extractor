@@ -1,11 +1,15 @@
 package io.github.bohdanrakov.configuration;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.web.client.RestClient;
+
+import java.time.Duration;
 
 @Configuration
 public class RestClientConfig {
@@ -25,10 +29,29 @@ public class RestClientConfig {
     @Value("${song.service.url}")
     private String songServiceUrl;
 
+    @Value("${storage.service.url}")
+    private String storageServiceUrl;
+
+    @Value("${storage.service.connect-timeout}")
+    private Duration storageServiceConnectTimeout;
+
+    @Value("${storage.service.read-timeout}")
+    private Duration storageServiceReadTimeout;
+
     @Bean
     public RestClient songsRestClient(@LoadBalanced RestClient.Builder loadBalancedRestClientBuilder) {
-        return loadBalancedRestClientBuilder
+        return loadBalancedRestClientBuilder.clone()
                 .baseUrl(songServiceUrl)
+                .build();
+    }
+
+    @Bean
+    public RestClient storageRestClient(@LoadBalanced RestClient.Builder loadBalancedRestClientBuilder) {
+        HttpClientSettings settings = HttpClientSettings.defaults()
+                .withTimeouts(storageServiceConnectTimeout, storageServiceReadTimeout);
+        return loadBalancedRestClientBuilder.clone()
+                .baseUrl(storageServiceUrl)
+                .requestFactory(ClientHttpRequestFactoryBuilder.detect().build(settings))
                 .build();
     }
 }

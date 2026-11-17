@@ -1,6 +1,7 @@
 package io.github.bohdanrakov.resourceprocessor.services;
 
 import io.github.bohdanrakov.resourceprocessor.dtos.SongServiceStoreRequest;
+import io.github.bohdanrakov.resourceprocessor.events.ResourceProcessedEventPublisher;
 import io.github.bohdanrakov.resourceprocessor.mappers.TikaMetadataSongRequestMapper;
 import org.springframework.stereotype.Service;
 import org.apache.tika.Tika;
@@ -21,11 +22,16 @@ public class MP3ParserService {
     private final SongServiceCallerService songServiceCallerService;
     private final ResourceServiceCallerService resourceServiceCallerService;
     private final TikaMetadataSongRequestMapper tikaMetadataSongRequestMapper;
+    private final ResourceProcessedEventPublisher resourceProcessedEventPublisher;
 
-    public MP3ParserService(SongServiceCallerService songServiceCallerService, ResourceServiceCallerService resourceServiceCallerService, TikaMetadataSongRequestMapper tikaMetadataSongRequestMapper) {
+    public MP3ParserService(SongServiceCallerService songServiceCallerService,
+                            ResourceServiceCallerService resourceServiceCallerService,
+                            TikaMetadataSongRequestMapper tikaMetadataSongRequestMapper,
+                            ResourceProcessedEventPublisher resourceProcessedEventPublisher) {
         this.songServiceCallerService = songServiceCallerService;
         this.resourceServiceCallerService = resourceServiceCallerService;
         this.tikaMetadataSongRequestMapper = tikaMetadataSongRequestMapper;
+        this.resourceProcessedEventPublisher = resourceProcessedEventPublisher;
     }
 
     public void processNewResource(Long id) {
@@ -33,6 +39,7 @@ public class MP3ParserService {
         Metadata metadata = extractMetadata(mp3ByteContent);
         SongServiceStoreRequest songRequest = tikaMetadataSongRequestMapper.toSongRequest(metadata, id);
         songServiceCallerService.uploadSongMetadata(songRequest);
+        resourceProcessedEventPublisher.sendResourceProcessedEvent(id);
     }
 
     public Metadata extractMetadata(byte[] mp3content) {
