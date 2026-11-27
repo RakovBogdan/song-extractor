@@ -10,8 +10,15 @@ public class MP3File {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(columnDefinition = "s3_key")
+    @Column(name = "s3_key")
     private String s3Key;
+
+    @Column(length = 63)
+    private String bucket;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private StorageType state;
 
     public void setId(Long id) {
         this.id = id;
@@ -27,5 +34,21 @@ public class MP3File {
 
     public void setS3Key(String s3Key) {
         this.s3Key = s3Key;
+    }
+
+    public String getBucket() {
+        return bucket;
+    }
+
+    public void setBucket(String bucket) {
+        this.bucket = bucket;
+    }
+
+    public StorageType getState() {
+        return state;
+    }
+
+    public void setState(StorageType state) {
+        this.state = state;
     }
 }

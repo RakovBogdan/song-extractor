@@ -13,6 +13,9 @@ import org.testcontainers.rabbitmq.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 @CucumberContextConfiguration
@@ -20,7 +23,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
         properties = "eureka.client.enabled=false")
 public class CucumberSpringConfiguration {
 
-    static final String BUCKET_NAME = "mp3-storage";
+    static final String BUCKET_NAME = "staging-mp3-storage";
     static final String QUEUE_NAME = "exchange-resource-id.resource-processor";
 
     @ServiceConnection
@@ -36,9 +39,18 @@ public class CucumberSpringConfiguration {
 
     static final WireMockServer songServiceStub = new WireMockServer(wireMockConfig().dynamicPort());
 
+    static final WireMockServer storageServiceStub = new WireMockServer(wireMockConfig().dynamicPort());
+
     static {
         Startables.deepStart(postgresqlContainer, rabbitMQContainer, localstackContainer).join();
         songServiceStub.start();
+        storageServiceStub.start();
+        storageServiceStub.stubFor(get(urlPathEqualTo("/storages")).willReturn(okJson("""
+                [
+                  {"id": 1, "storageType": "STAGING", "bucket": "%s", "path": "/files"},
+                  {"id": 2, "storageType": "PERMANENT", "bucket": "permanent-mp3-storage", "path": "/files"}
+                ]
+                """.formatted(BUCKET_NAME))));
     }
 
     @DynamicPropertySource
@@ -47,9 +59,10 @@ public class CucumberSpringConfiguration {
         registry.add("aws.s3.region", localstackContainer::getRegion);
         registry.add("aws.accessKeyId", localstackContainer::getAccessKey);
         registry.add("aws.secretAccessKey", localstackContainer::getSecretKey);
-        registry.add("aws.s3.bucket-name", () -> BUCKET_NAME);
 
         registry.add("spring.cloud.discovery.client.simple.instances.song-service[0].uri",
                 songServiceStub::baseUrl);
+        registry.add("spring.cloud.discovery.client.simple.instances.storage-service[0].uri",
+                storageServiceStub::baseUrl);
     }
 }
