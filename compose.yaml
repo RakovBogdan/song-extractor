@@ -160,6 +160,12 @@ services:
         condition: service_healthy
       storage-service:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8085/actuator/health | grep -q UP || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
   resource-db:
     image: postgres:17-alpine
@@ -289,6 +295,38 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q '\"level\":\"available\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  kibana-setup:
+    image: curlimages/curl:8.11.1
+    volumes:
+      - ./kibana/dashboards.ndjson:/dashboards.ndjson:ro
+    command: >
+      -sS --fail-with-body -X POST "http://kibana:5601/api/saved_objects/_import?overwrite=true"
+      -H "kbn-xsrf: true" --form file=@/dashboards.ndjson
+    depends_on:
+      kibana:
+        condition: service_healthy
+
+  metricbeat:
+    image: elastic/metricbeat:8.17.4
+    command: ["--strict.perms=false", "-e"]
+    environment:
+      GATEWAY_HOST: ${GATEWAY_HOST}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana-setup:
+        condition: service_completed_successfully
 
 volumes:
   es-data:

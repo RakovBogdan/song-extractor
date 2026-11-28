@@ -1,0 +1,43 @@
+metricbeat.modules:
+  - module: prometheus
+    metricsets: ["collector"]
+    period: 10s
+    hosts: ["${GATEWAY_HOST:host.docker.internal:8085}"]
+    metrics_path: /actuator/prometheus
+    use_types: true
+    rate_counters: true
+
+  - module: prometheus
+    metricsets: ["collector"]
+    period: 10s
+    hosts: ["${GATEWAY_HOST:host.docker.internal:8085}"]
+    metrics_path: /monitoring/resource-service/prometheus
+    use_types: true
+    rate_counters: true
+
+  - module: prometheus
+    metricsets: ["collector"]
+    period: 10s
+    hosts: ["${GATEWAY_HOST:host.docker.internal:8085}"]
+    metrics_path: /monitoring/song-service/prometheus
+    use_types: true
+    rate_counters: true
+
+  - module: prometheus
+    metricsets: ["collector"]
+    period: 10s
+    hosts: ["${GATEWAY_HOST:host.docker.internal:8085}"]
+    metrics_path: /monitoring/storage-service/prometheus
+    use_types: true
+    rate_counters: true
+
+  - module: prometheus
+    metricsets: ["collector"]
+    period: 10s
+    hosts: ["${GATEWAY_HOST:host.docker.internal:8085}"]
+    metrics_path: /monitoring/resource-processor/prometheus
+    use_types: true
+    rate_counters: true
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
